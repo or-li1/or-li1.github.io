@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Placeholder</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      text-align: center;
+      padding: 2rem;
+      background: #fafafa;
+      color: #222;
+      margin: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 5rem auto;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+    p {
+      font-size: 1.1rem;
+      color: #555;
+      line-height: 1.5;
+    }
+    .lang-switch {
+      margin-top: 2.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+    .lang-switch button {
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      background: #f5f5f5;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .lang-switch button.active {
+      background: #0366d6;
+      color: white;
+      border-color: #0366d6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="title">占位中……</h1>
+    <p id="subtitle">个人主页正在建设中，敬请期待！</p>
+
+    <div class="lang-switch" id="lang-buttons"></div>
+  </div>
+
+  <script>
+    // 支持的语言列表（20+）
+    const languages = [
+      { code: 'zh', name: '中文', native: '中文' },
+      { code: 'en', name: 'English', native: 'English' },
+      { code: 'es', name: 'Spanish', native: 'Español' },
+      { code: 'fr', name: 'French', native: 'Français' },
+      { code: 'de', name: 'German', native: 'Deutsch' },
+      { code: 'ja', name: 'Japanese', native: '日本語' },
+      { code: 'ko', name: 'Korean', native: '한국어' },
+      { code: 'ru', name: 'Russian', native: 'Русский' },
+      { code: 'pt', name: 'Portuguese', native: 'Português' },
+      { code: 'it', name: 'Italian', native: 'Italiano' },
+      { code: 'ar', name: 'Arabic', native: 'العربية' },
+      { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+      { code: 'tr', name: 'Turkish', native: 'Türkçe' },
+      { code: 'nl', name: 'Dutch', native: 'Nederlands' },
+      { code: 'pl', name: 'Polish', native: 'Polski' },
+      { code: 'sv', name: 'Swedish', native: 'Svenska' },
+      { code: 'vi', name: 'Vietnamese', native: 'Tiếng Việt' },
+      { code: 'th', name: 'Thai', native: 'ไทย' },
+      { code: 'id', name: 'Indonesian', native: 'Bahasa Indonesia' },
+      { code: 'el', name: 'Greek', native: 'Ελληνικά' },
+      { code: 'he', name: 'Hebrew', native: 'עברית' },
+      { code: 'cs', name: 'Czech', native: 'Čeština' },
+      { code: 'ro', name: 'Romanian', native: 'Română' },
+      { code: 'hu', name: 'Hungarian', native: 'Magyar' }
+    ];
+
+    // 多语言文本：title & subtitle
+    const messages = {
+      zh: { title: "占位中……", subtitle: "个人主页正在建设中，敬请期待！" },
+      en: { title: "Coming Soon...", subtitle: "Personal website is under construction. Stay tuned!" },
+      es: { title: "Próximamente...", subtitle: "Sitio web personal en construcción. ¡Estén atentos!" },
+      fr: { title: "Bientôt disponible...", subtitle: "Site personnel en cours de construction. Restez à l'écoute !" },
+      de: { title: "Demnächst...", subtitle: "Persönliche Website im Aufbau. Bleiben Sie dran!" },
+      ja: { title: "近日公開...", subtitle: "個人ホームページは現在準備中です。お楽しみに！" },
+      ko: { title: "곧 공개됩니다...", subtitle: "개인 웹사이트를 준비 중입니다. 기대해 주세요!" },
+      ru: { title: "Скоро...", subtitle: "Личный сайт находится в разработке. Следите за обновлениями!" },
+      pt: { title: "Em breve...", subtitle: "Site pessoal em construção. Fique atento!" },
+      it: { title: "Prossimamente...", subtitle: "Sito personale in costruzione. Restate sintonizzati!" },
+      ar: { title: "قريباً...", subtitle: "موقع شخصي قيد الإنشاء. ترقبوا!" },
+      hi: { title: "जल्द आ रहा है...", subtitle: "व्यक्तिगत वेबसाइट निर्माणाधीन है। बने रहें!" },
+      tr: { title: "Yakında...", subtitle: "Kişisel web sitesi yapım aşamasında. Takipte kalın!" },
+      nl: { title: "Binnenkort...", subtitle: "Persoonlijke website is in aanbouw. Blijf kijken!" },
+      pl: { title: "Wkrótce...", subtitle: "Osobista strona internetowa jest w budowie. Śledź nas!" },
+      sv: { title: "Kommer snart...", subtitle: "Personlig webbplats under konstruktion. Håll utkik!" },
+      vi: { title: "Sắp ra mắt...", subtitle: "Trang web cá nhân đang được xây dựng. Hãy chờ xem!" },
+      th: { title: "เร็ว ๆ นี้...", subtitle: "เว็บไซต์ส่วนตัวอยู่ระหว่างการก่อสร้าง โปรดติดตาม!" },
+      id: { title: "Segera hadir...", subtitle: "Situs pribadi sedang dalam pembangunan. Nantikan!" },
+      el: { title: "Σύντομα...", subtitle: "Προσωπική ιστοσελίδα σε κατασκευή. Μείνετε συντονισμένοι!" },
+      he: { title: "בקרוב...", subtitle: "האתר האישי בבנייה. התעדכנו!" },
+      cs: { title: "Již brzy...", subtitle: "Osobní webové stránky se připravují. Těšte se!" },
+      ro: { title: "În curând...", subtitle: "Site-ul personal este în construcție. Rămâneți pe aproape!" },
+      hu: { title: "Hamarosan...", subtitle: "Személyes weboldal készül. Maradjon velünk!" }
+    };
+
+    // 创建语言按钮
+    const langButtonsContainer = document.getElementById('lang-buttons');
+    languages.forEach(lang => {
+      const btn = document.createElement('button');
+      btn.textContent = lang.native;
+      btn.onclick = () => setLang(lang.code);
+      btn.dataset.code = lang.code;
+      langButtonsContainer.appendChild(btn);
+    });
+
+    // 设置语言
+    function setLang(code) {
+      if (!messages[code]) return;
+      document.getElementById('title').textContent = messages[code].title;
+      document.getElementById('subtitle').textContent = messages[code].subtitle;
+
+      // 更新按钮激活状态
+      document.querySelectorAll('#lang-buttons button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.code === code);
+      });
+
+      localStorage.setItem('lang', code);
+    }
+
+    // 检测浏览器语言
+    function detectBrowserLang() {
+      const navLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+      return languages.some(l => l.code === navLang) ? navLang : 'en';
+    }
+
+    // 初始化
+    window.onload = () => {
+      const savedLang = localStorage.getItem('lang') || detectBrowserLang();
+      setLang(savedLang);
+    };
+  </script>
+</body>
+</html>
