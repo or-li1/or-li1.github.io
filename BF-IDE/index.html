@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brainfuck IDE</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .ide-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+        
+        @media (max-width: 900px) {
+            .ide-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: rgba(20, 20, 35, 0.85);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .panel-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ff7e5f;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-title i {
+            color: #ff7e5f;
+        }
+        
+        .editor-container {
+            height: 300px;
+            margin-bottom: 15px;
+        }
+        
+        #code-editor {
+            width: 100%;
+            height: 100%;
+            background: #121212;
+            color: #e0e0e0;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            resize: none;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        #code-editor:focus {
+            box-shadow: 0 0 0 2px #ff7e5f;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .memory-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .memory-cell {
+            aspect-ratio: 1/1;
+            background: rgba(40, 40, 60, 0.7);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .memory-cell.active {
+            background: rgba(255, 126, 95, 0.3);
+            border-color: #ff7e5f;
+            box-shadow: 0 0 15px rgba(255, 126, 95, 0.5);
+        }
+        
+        .memory-cell .index {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+        
+        .memory-cell .value {
+            font-weight: bold;
+        }
+        
+        .memory-cell .char {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        
+        .output-container {
+            margin-top: 20px;
+        }
+        
+        .output-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        #output {
+            background: #121212;
+            border-radius: 10px;
+            padding: 15px;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .input-container {
+            margin-top: 20px;
+        }
+        
+        #input {
+            width: 100%;
+            padding: 12px;
+            background: #121212;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            margin-top: 10px;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .examples {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .example-card {
+            background: rgba(30, 30, 50, 0.7);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .example-card:hover {
+            transform: translateY(-5px);
+            background: rgba(40, 40, 70, 0.8);
+            border-color: #ff7e5f;
+        }
+        
+        .example-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #feb47b;
+        }
+        
+        .example-desc {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .loop-info {
+            background: rgba(75, 108, 183, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .loop-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        #loop-details {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .highlight {
+            background-color: rgba(255, 126, 95, 0.3);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Brainfuck IDE</h1>
+            <p class="subtitle">具备完整功能的Brainfuck语言集成开发环境</p>
+        </header>
+        
+        <div class="ide-container">
+            <div class="panel">
+                <h2 class="panel-title">代码编辑器</h2>
+                <div class="editor-container">
+                    <textarea id="code-editor" spellcheck="false">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
+                </div>
+                <div class="controls">
+                    <button id="run-btn" class="btn btn-primary">
+                        <span>全部执行</span>
+                    </button>
+                    <button id="step-btn" class="btn btn-secondary">
+                        <span>单步执行</span>
+                    </button>
+                    <button id="reset-btn" class="btn btn-secondary">
+                        <span>重置</span>
+                    </button>
+                    <button id="clear-output-btn" class="btn btn-secondary">
+                        <span>清空输出</span>
+                    </button>
+                </div>
+                
+                <div class="loop-info">
+                    <h3 class="loop-title">循环预计算结果</h3>
+                    <div id="loop-details">执行代码后将显示循环分析结果</div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2 class="panel-title">内存可视化</h2>
+                <div class="memory-container">
+                    <div class="memory-grid" id="memory-grid">
+                        <!-- 内存单元格将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="output-container">
+                    <div class="output-title">
+                        <h3>输出</h3>
+                        <span id="output-counter">0 字符</span>
+                    </div>
+                    <div id="output"></div>
+                </div>
+                
+                <div class="input-container">
+                    <h3>输入</h3>
+                    <input type="text" id="input" placeholder="输入字符（程序执行时会按顺序读取）">
+                </div>
+                
+                <div class="status-bar">
+                    <div class="status-item">
+                        <span>指令指针:</span>
+                        <span id="ip-status">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span>数据指针:</span>
+                        <span id="dp-status">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span>执行状态:</span>
+                        <span id="execution-status">就绪</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="examples">
+            <div class="example-card" data-code="++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.">
+                <div class="example-title">Hello World</div>
+                <div class="example-desc">经典的Hello World程序</div>
+            </div>
+            <div class="example-card" data-code=",[>,]<[.<]">
+                <div class="example-title">字符串反转</div>
+                <div class="example-desc">输入字符串并反转输出</div>
+            </div>
+            <div class="example-card" data-code="++++++[>++++++++++<-]>+++++.<">
+                <div class="example-title">输出字符</div>
+                <div class="example-desc">输出字符 'A' (ASCII 65)</div>
+            </div>
+            <div class="example-card" data-code="+++[>+++++<-]>[>+>+<<-]>>[<<+>>-]<<<[>>+>+<<<-]>>>[<<<+>>>-]<<[>>+<<-]>>[>+<-]>[<+>-]<.">
+                <div class="example-title">乘法示例</div>
+                <div class="example-desc">计算 3 * 5 = 15</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Brainfuck解释器类
+        class BrainfuckInterpreter {
+            constructor() {
+                this.memory = new Array(30000).fill(0);
+                this.dataPointer = 0;
+                this.instructionPointer = 0;
+                this.code = '';
+                this.input = '';
+                this.inputIndex = 0;
+                this.output = '';
+                this.isRunning = false;
+                this.stepMode = false;
+                this.loopStack = [];
+                this.loopAnalysis = [];
+            }
+            
+            reset() {
+                this.memory.fill(0);
+                this.dataPointer = 0;
+                this.instructionPointer = 0;
+                this.inputIndex = 0;
+                this.output = '';
+                this.isRunning = false;
+                this.stepMode = false;
+                this.loopStack = [];
+                this.loopAnalysis = [];
+                document.getElementById('output').textContent = '';
+                document.getElementById('output-counter').textContent = '0 字符';
+                document.getElementById('execution-status').textContent = '已重置';
+                this.updateMemoryView();
+            }
+            
+            setInput(input) {
+                this.input = input;
+                this.inputIndex = 0;
+            }
+            
+            setCode(code) {
+                this.code = code;
+                this.analyzeLoops();
+            }
+            
+            analyzeLoops() {
+                this.loopAnalysis = [];
+                const stack = [];
+                const code = this.code;
+                
+                for (let i = 0; i < code.length; i++) {
+                    if (code[i] === '[') {
+                        stack.push(i);
+                    } else if (code[i] === ']') {
+                        if (stack.length === 0) {
+                            // 无效的右括号，跳过
+                            continue;
+                        }
+                        const start = stack.pop();
+                        this.loopAnalysis.push({ start, end: i });
+                    }
+                }
+                
+                // 处理未闭合的左括号
+                while (stack.length > 0) {
+                    const start = stack.pop();
+                    this.loopAnalysis.push({ start, end: -1 });
+                }
+            }
+            
+            getLoopInfo() {
+                if (this.loopAnalysis.length === 0) {
+                    return '未检测到循环结构';
+                }
+                
+                let info = '';
+                for (const loop of this.loopAnalysis) {
+                    if (loop.end === -1) {
+                        info += `未闭合循环: [${loop.start}]\n`;
+                    } else {
+                        const loopCode = this.code.substring(loop.start + 1, loop.end);
+                        info += `循环 [${loop.start} -> ${loop.end}]: "${loopCode}"\n`;
+                    }
+                }
+                return info.trim();
+            }
+            
+            executeStep() {
+                if (this.instructionPointer >= this.code.length) {
+                    this.isRunning = false;
+                    document.getElementById('execution-status').textContent = '执行完成';
+                    return false;
+                }
+                
+                const command = this.code[this.instructionPointer];
+                let executed = true;
+                
+                switch (command) {
+                    case '>':
+                        this.dataPointer = (this.dataPointer + 1) % this.memory.length;
+                        break;
+                    case '<':
+                        this.dataPointer = (this.dataPointer - 1 + this.memory.length) % this.memory.length;
+                        break;
+                    case '+':
+                        this.memory[this.dataPointer] = (this.memory[this.dataPointer] + 1) % 256;
+                        break;
+                    case '-':
+                        this.memory[this.dataPointer] = (this.memory[this.dataPointer] - 1 + 256) % 256;
+                        break;
+                    case '.':
+                        const char = String.fromCharCode(this.memory[this.dataPointer]);
+                        this.output += char;
+                        document.getElementById('output').textContent = this.output;
+                        document.getElementById('output-counter').textContent = `${this.output.length} 字符`;
+                        break;
+                    case ',':
+                        if (this.inputIndex < this.input.length) {
+                            this.memory[this.dataPointer] = this.input.charCodeAt(this.inputIndex);
+                            this.inputIndex++;
+                        } else {
+                            // 如果没有输入，则设为0
+                            this.memory[this.dataPointer] = 0;
+                        }
+                        break;
+                    case '[':
+                        if (this.memory[this.dataPointer] === 0) {
+                            // 跳过循环
+                            let depth = 1;
+                            let i = this.instructionPointer + 1;
+                            while (i < this.code.length && depth > 0) {
+                                if (this.code[i] === '[') depth++;
+                                if (this.code[i] === ']') depth--;
+                                i++;
+                            }
+                            this.instructionPointer = i - 1; // -1 because we increment below
+                        } else {
+                            this.loopStack.push(this.instructionPointer);
+                        }
+                        break;
+                    case ']':
+                        if (this.memory[this.dataPointer] !== 0 && this.loopStack.length > 0) {
+                            this.instructionPointer = this.loopStack[this.loopStack.length - 1];
+                        } else if (this.loopStack.length > 0) {
+                            this.loopStack.pop();
+                        } else {
+                            // 无效的右括号，跳过
+                        }
+                        break;
+                    default:
+                        // 忽略非Brainfuck指令
+                        executed = false;
+                }
+                
+                if (executed) {
+                    this.instructionPointer++;
+                } else {
+                    // 对于无效指令，直接跳过
+                    this.instructionPointer++;
+                }
+                
+                // 更新状态
+                document.getElementById('ip-status').textContent = this.instructionPointer;
+                document.getElementById('dp-status').textContent = this.dataPointer;
+                
+                if (this.stepMode) {
+                    document.getElementById('execution-status').textContent = '单步执行中';
+                }
+                
+                return true;
+            }
+            
+            run() {
+                this.isRunning = true;
+                this.stepMode = false;
+                document.getElementById('execution-status').textContent = '正在执行...';
+                
+                // 使用setTimeout避免阻塞UI
+                const execute = () => {
+                    if (!this.isRunning) return;
+                    
+                    const hasMore = this.executeStep();
+                    if (hasMore && this.isRunning) {
+                        // 继续执行
+                        setTimeout(execute, 0);
+                    } else {
+                        this.isRunning = false;
+                        document.getElementById('execution-status').textContent = '执行完成';
+                    }
+                };
+                
+                execute();
+            }
+            
+            step() {
+                if (this.instructionPointer >= this.code.length) {
+                    document.getElementById('execution-status').textContent = '执行完成';
+                    return;
+                }
+                
+                this.stepMode = true;
+                this.isRunning = true;
+                this.executeStep();
+                this.isRunning = false;
+            }
+            
+            updateMemoryView() {
+                const memoryGrid = document.getElementById('memory-grid');
+                memoryGrid.innerHTML = '';
+                
+                // 显示前256个内存单元
+                const visibleCells = 256;
+                for (let i = 0; i < visibleCells; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'memory-cell';
+                    if (i === this.dataPointer) {
+                        cell.classList.add('active');
+                    }
+                    
+                    const index = document.createElement('div');
+                    index.className = 'index';
+                    index.textContent = i;
+                    
+                    const value = document.createElement('div');
+                    value.className = 'value';
+                    value.textContent = this.memory[i];
+                    
+                    const char = document.createElement('div');
+                    char.className = 'char';
+                    char.textContent = String.fromCharCode(this.memory[i]);
+                    
+                    cell.appendChild(index);
+                    cell.appendChild(value);
+                    cell.appendChild(char);
+                    memoryGrid.appendChild(cell);
+                }
+            }
+        }
+        
+        // 初始化
+        const interpreter = new BrainfuckInterpreter();
+        const codeEditor = document.getElementById('code-editor');
+        const runBtn = document.getElementById('run-btn');
+        const stepBtn = document.getElementById('step-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const clearOutputBtn = document.getElementById('clear-output-btn');
+        const inputField = document.getElementById('input');
+        const loopDetails = document.getElementById('loop-details');
+        
+        // 设置初始代码
+        interpreter.setCode(codeEditor.value);
+        interpreter.updateMemoryView();
+        loopDetails.textContent = interpreter.getLoopInfo();
+        
+        // 事件监听器
+        codeEditor.addEventListener('input', () => {
+            interpreter.setCode(codeEditor.value);
+            loopDetails.textContent = interpreter.getLoopInfo();
+        });
+        
+        inputField.addEventListener('input', () => {
+            interpreter.setInput(inputField.value);
+        });
+        
+        runBtn.addEventListener('click', () => {
+            interpreter.setInput(inputField.value);
+            interpreter.reset();
+            interpreter.setCode(codeEditor.value);
+            interpreter.run();
+        });
+        
+        stepBtn.addEventListener('click', () => {
+            if (!interpreter.isRunning) {
+                interpreter.setInput(inputField.value);
+                interpreter.setCode(codeEditor.value);
+            }
+            interpreter.step();
+            interpreter.updateMemoryView();
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            interpreter.reset();
+            interpreter.setCode(codeEditor.value);
+            interpreter.updateMemoryView();
+        });
+        
+        clearOutputBtn.addEventListener('click', () => {
+            interpreter.output = '';
+            document.getElementById('output').textContent = '';
+            document.getElementById('output-counter').textContent = '0 字符';
+        });
+        
+        // 示例代码点击
+        document.querySelectorAll('.example-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const code = card.getAttribute('data-code');
+                codeEditor.value = code;
+                interpreter.setCode(code);
+                loopDetails.textContent = interpreter.getLoopInfo();
+                interpreter.reset();
+                interpreter.updateMemoryView();
+            });
+        });
+        
+        // 初始化内存视图
+        interpreter.updateMemoryView();
+    </script>
+</body>
+</html>
